@@ -1,5 +1,5 @@
 <?php
-namespace Jeroenhekihenk\Webinarjam;
+namespace Awolacademy\Webinarjam;
 
 use Exception;
 use Log;
@@ -8,7 +8,7 @@ class WebinarJam
 {
     protected $jandje;
 
-    public function __construct(JandjeWebinarJam $jandje)
+    public function __construct(BaseJandjeJam $jandje)
     {
         $this->jandje = $jandje;
     }
@@ -25,6 +25,18 @@ class WebinarJam
         return $response;
     }
 
+    /**
+     * Get webinar by ID on your account
+     * @param $webinarId
+     * @throws WebinarJamException
+     */
+    public function getWebinar($webinarId)
+    {
+        $endpoint = 'webinar';
+        $data = array('webinar_id' => $webinarId);
+        $response = $this->callApi('getwebinar', $endpoint, $data);
+        return $response;
+    }
 
     /**
      * Register the person to a webinar
@@ -32,33 +44,44 @@ class WebinarJam
      * @param $name
      * @param $email
      * @param $schedule
+     * @param $timezone
      * @return string
      * @throws WebinarJamException
      */
-    public function registerToWebinar($webinarId, $name, $email, $schedule)
+    public function registerToWebinar($webinarId, $name, $email, $schedule, $timezone = null)
     {
-        // TODO
-        // TEST TEST TEST TEST TEST
-        // TEST TEST TEST TEST
-        // TEST TEST TEST
-        // TEST TEST
-        // TEST
-
-
         $endpoint = 'register';
 
         $data = [];
         if(!empty($webinarId)) {
             $data['webinar_id'] = $webinarId;
         }
+        $name = trim($name);
         if(!empty($name)) {
-            $data['name'] = $name;
+            if ($this->jandje instanceof JandjeGenndiEverWebinarJam) {
+                $parts = explode(' ', $name);
+                if (count($parts) > 1) {
+                    $name_last = array_pop($parts);
+                    $name_first = trim(implode(' ', $parts));
+                    $data['first_name'] = $name_first;
+                    $data['last_name'] = $name_last;
+                } else {
+                    $data['first_name'] = $name;
+                }
+            } else {
+                $data['name'] = $name;
+            }
         }
         if(!empty($email)) {
             $data['email'] = $email;
         }
-        if(!empty($schedule)) {
+        if(ctype_digit($schedule)) {
             $data['schedule'] = $schedule;
+        }
+        if ($this->jandje instanceof JandjeGenndiEverWebinarJam) {
+            if(!empty($timezone)) {
+                $data['timezone'] = $timezone;
+            }
         }
 
         $response = $this->callApi('registertowebinar', $endpoint, $data);
